@@ -53,7 +53,15 @@ import os
 import sys
 
 
-def ret_banner(ip, port):
+def return_banner(ip, port):
+    """Creates a connection to a remote system and captures the connection banner.
+
+    ip:         The IP of the system to attempt a connection with.
+
+    port:       The port to attempt the connection on.
+
+    Returns:    A copy of the banner decoded from byte to utf-8 format. """
+
     try:
         socket.setdefaulttimeout(2)
         s = socket.socket()
@@ -65,7 +73,18 @@ def ret_banner(ip, port):
         return                              # reporting them, but it is better than nothing for now.
 
 
-def check_vulns(banner, filename):
+def check_vulnerabilities(banner, filename):
+    """Check connection banner of currently connected system against a file of known vulnerable software.
+
+    banner:     Connection String from currently connected system. Passed in from the function return_banner.
+
+    filename:   Name of the file passed in from the commandline. File contains a list of connection banners for
+                known vulnerable systems. One banner per line.
+
+    Returns:    Does not return anything to the caller.
+
+     If a vulnerability match is found then a notification is output to stdout."""
+
     # f = open(filename, 'r')
     with open(filename, 'rU') as f:  # Modified the file read to use the correct Pythonic method.
         for line in f:
@@ -83,17 +102,17 @@ def main():
             print('[-] {} access denied'.format(filename))
             sys.exit(0)  # "sys.exit()" should be used in source files. "exit()" is meant for the interactive shell.
     else:
-        print('[-] Usage: {} <vuln filename>'.format(sys.argv[0]))
+        print('[-] Usage: {} <vulnerabilities filename>'.format(sys.argv[0]))
         sys.exit(0)     # "sys.exit()" should be used in source files. "exit()" is meant for the interactive shell.
 
     port_list = [21, 22, 25, 80, 110, 443]
     for x in range(145, 255):
         ip = '192.168.0.' + str(x)
         for port in port_list:
-            banner = ret_banner(ip, port)
+            banner = return_banner(ip, port)
             if banner:
                 print('[+] {}: {}'.format(ip, banner.strip('\n')))  # strip newline causing annoying gap in the output.
-                check_vulns(banner, filename)
+                check_vulnerabilities(banner, filename)
 
     print('End Run')
 
