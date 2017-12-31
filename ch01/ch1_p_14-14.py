@@ -5,7 +5,7 @@ import socket
 
 def ret_banner(ip, port):
     try:
-        socket.setdefaulttimeout(5)
+        socket.setdefaulttimeout(2)
         s = socket.socket()
         s.connect((ip, port))
         banner = s.recv(1024)

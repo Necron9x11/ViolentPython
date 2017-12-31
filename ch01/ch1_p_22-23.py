@@ -18,6 +18,7 @@ def test_pass(crypt_pass):
         for word in dict_file:
             word = word.strip('\n')
             crypt_word = crypt.crypt(word, salt)
+            print('word == {} | crypt_word == {} | crypt_pass == {}'.format(word, crypt_word, crypt_pass))
             if (crypt_word == crypt_pass):
                 print('[+] Found Password: {}'.format(word))
                 return
