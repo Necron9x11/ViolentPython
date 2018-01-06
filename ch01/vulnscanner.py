@@ -16,7 +16,7 @@
 # Modified to run under Python 3.x by: Daniel Raphael
 #
 # This was originally coded for Python 2.x.
-# Mods made to run under Python 3.6 follow. These include stylistic as well as functional code modifications.
+# Mods made to run under Python 3.x follow. These include stylistic as well as functional code modifications.
 # - var banner : Byte data returned by socket.recv().
 #       Initial reference to banner updated to use the decode method:
 #
@@ -54,13 +54,15 @@ import sys
 
 
 def return_banner(ip, port):
-    """Creates a connection to a remote system and captures the connection banner.
+    """
+    Creates a connection to a remote system and captures the connection banner.
 
     ip:         The IP of the system to attempt a connection with.
 
     port:       The port to attempt the connection on.
 
-    Returns:    A copy of the banner decoded from byte to utf-8 format. """
+    Returns:    A copy of the banner decoded from byte to utf-8 format.
+    """
 
     try:
         socket.setdefaulttimeout(2)
@@ -74,7 +76,8 @@ def return_banner(ip, port):
 
 
 def check_vulnerabilities(banner, filename):
-    """Check connection banner of currently connected system against a file of known vulnerable software.
+    """
+    Check connection banner of currently connected system against a file of known vulnerable software.
 
     banner:     Connection String from currently connected system. Passed in from the function return_banner.
 
@@ -83,7 +86,8 @@ def check_vulnerabilities(banner, filename):
 
     Returns:    Does not return anything to the caller.
 
-     If a vulnerability match is found then a notification is output to stdout."""
+     If a vulnerability match is found then a notification is output to stdout.
+     """
 
     # f = open(filename, 'r')
     with open(filename, 'rU') as f:  # Modified the file read to use the correct Pythonic method.
