@@ -150,23 +150,145 @@ import argparse
 #
 # the banner grabbing function - pp.35-36
 #
+# import argparse
+# import socket
+# from socket import *
+#
+#
+# def scan_connection(target_host, target_port):
+#     try:
+#         socket_connection = socket(AF_INET, SOCK_STREAM)
+#         socket_connection.connect((target_host, target_port))
+#         socket_connection.send(b'ViolentPython\r\n')                      # Had to convert this to byte. Was string.
+#         results = socket_connection.recv(100)
+#         print('[+] {}/tcp open'.format(target_port))
+#         print('[+] {}'.format(results))
+#         socket_connection.close()
+#
+#     except OSError:
+#         print('[-] {}/tcp closed'.format(target_port))
+#
+#
+# def scan_port(target_host, target_ports):
+#     try:
+#         target_ip = gethostbyname(target_host)
+#     except OSError:
+#         print('[-] Cannot resolve {}: Unknown Host'.format(target_host))
+#         return
+#
+#     try:
+#         target_name = gethostbyaddr(target_ip)
+#         print('\n[+] Scan Results for: {}'.format(target_name[0]))
+#
+#     except OSError:
+#         print('\n[+] Scan Results for: '.format(target_ip))
+#
+#     setdefaulttimeout(1)
+#
+#     for target_port in target_ports:
+#         print('Scanning port {}'.format(target_port))
+#         scan_connection(target_host, int(target_port))
+#
+#
+# def main():
+#
+#     parser = argparse.ArgumentParser()
+#
+#     parser.add_argument('-H', '--host',
+#                         type=str,
+#                         required=True,
+#                         help='specify target host')
+#
+#     parser.add_argument('-p', '--port',
+#                         type=str,
+#                         help='specify target ports, separated by commas')
+#
+#     args = parser.parse_args()
+#
+#     # note that now args.host holds the name of the host passed in from the cli and args.ports holds the port
+#
+#     target_host = args.host
+#     target_port = str(args.port).split(',')
+#
+#     # print(target_port)
+#     # sys.exit()
+#
+#     # target_host = "centos01"
+#     # target_port = []
+#     # target_port.append(22,)
+#     # target_port = "22"
+#
+#     scan_port(target_host, target_port)
+#
+#
+# if __name__ == '__main__':
+#     main()
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+#
+# Threading code pp.37-38
+#
+# It was no in the book at this point but, to use threading, you much import the threading module
+#
+# from threading import *
+#
+# Following are the mods that need to be made to the scan_port() function. Code is the same as it was for Python 2.x
+#
+# for target_port in target_ports:
+#     t = Thread(target=scan_connection)
+#     t.start()
+#
+# Following are the mods that need be made to the scan_connection() function
+#
+# screen_lock = Semaphore(value=1)
+#
+# def scan_connection(target_host, target_port):
+#     try:
+#         socket_connection = socket(AF_INET, SOCK_STREAM)
+#         socket_connection.connect((target_host, target_port))
+#         socket_connection.send(b'ViolentPython\r\n')                      # Had to convert this to byte. Was string.
+#         results = socket_connection.recv(100)
+#         screen_lock.acquire()
+#         print('[+] {}/tcp open'.format(target_port))
+#         print('[+] {}'.format(results))
+#
+#     except OSError:
+#         screen_lock.acquire()
+#         print('[-] {}/tcp closed'.format(target_port))
+#
+#     finally:
+#         screen_lock.release()
+#         socket_connection.close()
+
+# ---------------------------------------------------------------------------------------------------------------------
+#
+# Final complete port scanner code pp.38-39
+#
 import argparse
-import socket
 from socket import *
+from threading import *
+
+
+screen_lock = Semaphore(value=1)
 
 
 def scan_connection(target_host, target_port):
     try:
         socket_connection = socket(AF_INET, SOCK_STREAM)
-        socket_connection.connect((target_host, target_port))
-        socket_connection.send(b'ViolentPython\r\n')
+        socket_connection.connect((target_host, int(target_port)))          # Had to convert this to int. Was string.
+        socket_connection.send(b'ViolentPython\r\n')                        # Had to convert this to byte. Was string.
         results = socket_connection.recv(100)
+        screen_lock.acquire()
         print('[+] {}/tcp open'.format(target_port))
         print('[+] {}'.format(results))
-        socket_connection.close()
 
     except OSError:
+        screen_lock.acquire()
         print('[-] {}/tcp closed'.format(target_port))
+    finally:
+        screen_lock.release()
+        socket_connection.close()
 
 
 def scan_port(target_host, target_ports):
@@ -186,8 +308,9 @@ def scan_port(target_host, target_ports):
     setdefaulttimeout(1)
 
     for target_port in target_ports:
-        print('Scanning port {}'.format(target_port))
-        scan_connection(target_host, int(target_port))
+        t = Thread(target=scan_connection, args=(target_host, target_port))
+        t.start()
+
 
 def main():
 
@@ -200,7 +323,7 @@ def main():
 
     parser.add_argument('-p', '--port',
                         type=str,
-                        help='specify target ports, separated by commas')
+                        help='specify target ports, separated by commas (NO spaces: 22,80,443,etc.')
 
     args = parser.parse_args()
 
@@ -213,9 +336,7 @@ def main():
     # sys.exit()
 
     # target_host = "centos01"
-    # target_port = []
-    # target_port.append(22,)
-    # target_port = "22"
+    # target_port = [x for x in range(1, 8092)]
 
     scan_port(target_host, target_port)
 
