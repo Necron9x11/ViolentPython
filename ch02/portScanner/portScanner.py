@@ -98,8 +98,8 @@ if sys.version_info[0] != 3 or sys.version_info[1] < 5:
 #
 # Initial code - p.34 - The command line options handler
 #
-import argparse
-
+# import argparse
+#
 # Note that in the book there is code that checks to make sure neither option is == None and, if so, exit the program.
 # This has been omitted as with argparse we can specify the "required=True" option and the module will handle this
 # for us.
