@@ -1,0 +1,59 @@
+Easy on the eyes visual representation of the dictionary returned by:
+
+  nmap_scan = nmap.PortScanner()
+  nmap_scan.scan(127.0.0.1, 22-650)
+  print(nmap_scan['127.0.0.1'].state())
+
+  What you get is rather hard to interpret right off the bat:
+  nmap scan.state == {'tcp': {25: {'conf': '10', 'extrainfo': '', 'name': 'smtp', 'version': '', 'state': 'open', 'reason': 'syn-ack', 'cpe': 'cpe:/a:postfix:postfix', 'product': 'Postfix smtpd'}, 631: {'conf': '10', 'extrainfo': '', 'name': 'ipp', 'version': '2.1', 'state': 'open', 'reason': 'syn-ack', 'cpe': 'cpe:/a:apple:cups:2.1', 'product': 'CUPS'}}, 'hostnames': [{'name': 'localhost', 'type': 'user'}, {'name': 'localhost', 'type': 'PTR'}], 'vendor': {}, 'addresses': {'ipv4': '127.0.0.1'}, 'status': {'state': 'up', 'reason': 'conn-refused'}}
+
+
+This makes it easier to visualize:
+
+nmap scan.state == 
+{
+ 'addresses':   {
+                 'ipv4': '127.0.0.1'
+                 }, 
+ 
+ 'vendor':    {}, 
+ 
+ 'status':    {
+               'reason': 'conn-refused', 
+                'state': 'up'
+              }, 
+       
+ 'tcp': 
+            {
+             25:  {
+                 'name': 'smtp', 
+                 'reason': 'syn-ack', 
+                 'state': 'open', 
+                 'extrainfo': '', 
+                 'product': 'Postfix smtpd', 
+                 'conf': '10', 
+                 'version': '', 
+                 'cpe': 'cpe:/a:postfix:postfix'
+                 },
+                 
+             631:   {'name': 'ipp', 
+                 'reason': 'syn-ack', 
+                 'state': 'open', 
+                 'extrainfo': '', 
+                 'product': 'CUPS', 
+                 'conf': '10', 
+                 'version': '2.1', 
+                 'cpe': 'cpe:/a:apple:cups:2.1'
+                 }
+             }, 
+             
+ 'hostnames':   [
+               {
+                'type': 'user', 
+                'name': 'localhost'
+                }, 
+                {'type': 'PTR', 
+                'name': 'localhost'
+                }
+               ]
+}

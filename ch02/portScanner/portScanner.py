@@ -20,6 +20,8 @@
 #
 # Introduces the  socket module:
 #
+# Introduces the threading module:
+#
 # Introduces the argparse module:
 # The argparse module makes it easy to write user-friendly command-line interfaces. The program defines what arguments
 # it requires, and argparse will figure out how to parse those out of sys.argv. The argparse module also automatically
@@ -44,6 +46,13 @@
 #
 # Mods made to run under Python 3.x follow. These include stylistic as well as functional code modifications.
 #
+# - int() : had to convert the target_port variable to an int.
+#
+# - encoding : had to convert the string sent to the remote server to byte encoding from utf-8:
+#
+#   socket_connection.send('ViolentPython\r\n') became socket_connection.send(b'ViolentPython\r\n')
+#                                                                             ^
+#
 # - try/except :  Original code used a bare except clause. Python 3 considers this to be to generalized.
 #       Updated the except clause to the more robust form:
 #
@@ -53,28 +62,34 @@
 #       Updated to use the underscore style:
 #           retBanner became ret_banner, etc.
 #
-# - print - Converted all Python 2.x style print statements to use the Python 3.x print() function and
+# - print : Converted all Python 2.x style print statements to use the Python 3.x print() function and
 #   the .format string method instead of the string concatenations originally employed. I did this as it is
 #   better performance wise and is more feature rich. For instance it does type conversion without the need to
 #   call functions like str() and int() all the time.
 #
 #   print '[+] ' + ip + ' : ' + banner          became:     print('[+] {} : {}'.format(ip, banner))
 #
-# - exit() - converted all instances of "exit()" to "sys.exit()" as "exit()" is meant for the interactive
+# - exit() : converted all instances of "exit()" to "sys.exit()" as "exit()" is meant for the interactive
 #   environment and "sys.exit()" is preferred for use in source files that will be executed from the command line.
 #
-# - f = open(filename, 'r') - changed this to use the more Pythonic form: with open(filename, 'rU') as f:
+# - f = open(filename, 'r') : changed this to use the more Pythonic form: with open(filename, 'rU') as f:
 #
-# Original Author: TJ O'Connor
-# Modified to run under Python 3.x by: Daniel Raphael
+# - optparse code converted to argparse code. This is not required to run under v3.x but optparse is deprecated since
+#   v2.7 and moving to argparse is in keeping with my goal of not only converting v2.x specific code to v3.x but also
+#   doing my best to make the code more modern and more Pythonic by current standards.
+#
 #
 # ---------------------------------------------------------------------------------------------------------------------
 #
+# Functional Changes
+#
+# Added code to check for Python3.x and exit if not available.
+
 # Python3 is expected:
 #
 import sys
-# if sys.version_info[0] != 3 or sys.version_info[1] < 5:
-#     sys.exit('This program needs Python3.5.0+')
+if sys.version_info[0] != 3 or sys.version_info[1] < 5:
+    sys.exit('This program needs Python3.5.0+')
 
 # print('Python version is: {}'.format(sys.version_info))
 
@@ -314,6 +329,7 @@ def scan_port(target_host, target_ports):
 
 def main():
 
+    # Begin Parser ------------------------------------------------------------------------------------------------
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-H', '--host',
@@ -332,8 +348,11 @@ def main():
     target_host = args.host
     target_port = str(args.port).split(',')
 
-    # print(target_port)
-    # sys.exit()
+    # End Parser --------------------------------------------------------------------------------------------------
+
+    # If you comment out the parser code above and uncomment the below two lines you can hard code a specific target
+    # and a range of ports to scan. This was in here for initial testing but I left it because I found it useful.
+    # It is not par of the original book code.
 
     # target_host = "centos01"
     # target_port = [x for x in range(1, 8092)]
