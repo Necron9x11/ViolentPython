@@ -5,7 +5,7 @@
 # Violent Python - A Cookbook for Hackers,Forensic Analysts,Penetration Testers and Security Engineers
 # Chapter 2 | Port Scanner Portion of the Morris Work Lookalike - version 1
 #
-# NOTE: This is a modified version of the code from pages 31 through 80.
+# NOTE: This is a modified version of the code from pages 31 through 41.
 #
 #       The original version supplied with the book can be downloaded from:
 #
